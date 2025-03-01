@@ -5,8 +5,9 @@ class Offer:
     keepaAccessKey=""
     amazonDomainForGermany=3
 
-    def __init__(self,imageUrl:str="", ASIN:str="",idealoUrl:str="", ProductName:str= "", storeName: str="", price: float = 0, amazonPrice: float = 0, ebayPrice: float = 0, shopUrl:str="", amazonShopUrl:str="", ebayShopUrl:str=""):
+    def __init__(self,category:str="",imageUrl:str="", ASIN:str="",idealoUrl:str="", ProductName:str= "", storeName: str="", price: float = 0, amazonPrice: float = 0, ebayPrice: float = 0, shopUrl:str="", amazonShopUrl:str="", ebayShopUrl:str=""):
         self.ASIN=ASIN
+        self.Category=category
         self.ImageUrl=imageUrl
         self.IdealoUrl=idealoUrl
         self.ProductName = ProductName
@@ -19,6 +20,7 @@ class Offer:
         self.ebayShopUrl=ebayShopUrl
         self.amazonRelocationUrl = ""
         self.ebayRelocationUrl = ""
+        self.shopRelocationUrl = ""
     
     def hasMarketPrices(self)-> bool:
         if self.amazonPrice >0 and self.ebayPrice >0:
@@ -38,7 +40,7 @@ class Offer:
         return 0
     
     def HashMinimumMargin(self, margin):
-         return self.amazonDifference >=margin or self.ebayDifference >margin
+         return self.getShopNameWithTheHighestMargin() >=margin
         
     def getShopNameWithTheHighestMargin(self):
         if self.amazonDifference >self.ebayDifference:

@@ -5,17 +5,19 @@ import concurrent.futures
 from datetime import datetime
 from Offer import Offer
 from Toolkits import priceStringtoFload
-from Database import UpsertDb, getElementByASIN
-from Discorder import send_to_discord
+from AzureDatabase import UpsertDb, getElementByASIN
+from Discorder import Discorder
 
+from WhatsApp import WhatsApp
 
 class IdealoParser:
     
    
-   
     
-    def __init__(self,entryUrl:str=""):
-        self.EntryUrl=entryUrl
+    
+    def __init__(self, discorder:Discorder, category:str=""):
+        self.Category=category
+        self.Discorder=discorder
     @property
     def getHeader(self):
         return {
@@ -26,21 +28,32 @@ class IdealoParser:
         }
     
     def getDestinationShopWithFollowLink(self,inputUrl):
-        headers= {
+        header= {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0",
             "sec-ch-ua-platform": "Windows",
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"90\", \"Microsoft Edge\";v=\"134\"",
         }
-        responseDetails = requests.get(f"https://www.idealo.de{inputUrl}", headers=headers, allow_redirects=True)
-        return responseDetails.url
+        url = f"https://www.idealo.de{inputUrl}"
+        try:
+            responseDetails =  requests.get(url, headers=header, allow_redirects=True)
+            return responseDetails.url
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
+            return None
 
 
     def getLinkAndPrice(self,offerDetails:Offer)->Offer:
-        responseDetails = requests.get(offerDetails.IdealoUrl, headers=self.getHeader)
+        responseDetails = self.performRequest(offerDetails.IdealoUrl)
+        # requests.get(offerDetails.IdealoUrl, headers=self.getHeader)
         if responseDetails.status_code == 200:
             soupDetails = BeautifulSoup(responseDetails.content, 'html.parser')
             offer_list = soupDetails.find(id="offer-list-with-pagination")
+
+            ## Get Image
+            if soupDetails.find(id="slide-0")!= None:
+                img= soupDetails.find(id="slide-0").find("img")["src"]
+                offerDetails.ImageUrl= f"https:{img}"
             if soupDetails.find("img", class_="oopStage-galleryCollageImage")!= None:
                 img=soupDetails.find("img", class_="oopStage-galleryCollageImage")["src"]
                 offerDetails.ImageUrl= f"https:{img}"
@@ -55,7 +68,7 @@ class IdealoParser:
                 offerDetails.price= priceStringtoFload(price)
                 
                 relocateUrlhRef = offer_items[0].find("a", class_="productOffers-listItemOfferCtaLeadout")['href']
-                offerDetails.shopUrl = self.getDestinationShopWithFollowLink(relocateUrlhRef)
+                offerDetails.shopRelocationUrl=relocateUrlhRef
 
                 ## find out if amazon is available
                 for offer_item in offer_items:
@@ -78,44 +91,66 @@ class IdealoParser:
                 offerDetails.amazonShopUrl = self.getDestinationShopWithFollowLink(offerDetails.amazonRelocationUrl) + "&tag=saschabajoncz-21"
             else:
                 offerDetails.ebayShopUrl = self.getDestinationShopWithFollowLink(offerDetails.ebayRelocationUrl)
-                
+
+            offerDetails.shopUrl = self.getDestinationShopWithFollowLink(relocateUrlhRef)
+    
             return offerDetails
         
 
 
 
 
-    def process_element(self,element)->Offer:
+    def processElement(self,element)->Offer:
+        offer= Offer()
         title = element.find("div", {"data-testid": "productSummary__title"}).text.strip()
         print("Fetching product ", title)
-        link = element.find("a", {"data-testid": "link"})['href']
-        
-    
-        offer= Offer()
-        offer.IdealoUrl=link
+        if element.find("a", {"data-testid": "link"}) != None:
+            offer.IdealoUrl = element.find("a", {"data-testid": "link"})['href']
+        offer.Category=self.Category
         offer.ProductName=title
-
         offerData= self.getLinkAndPrice(offer)
         offerData.ProductName = title
 
 
         if offerData.isAmazonAvailable():
             existingOffer = getElementByASIN(offerData.getAsinFromAmazon())
-            if existingOffer is None or offerData.price != existingOffer.price:
-                UpsertDb(offerData)
-                if offerData.HashMinimumMargin(5):
-                    send_to_discord(offerData)
-        return offerData
+            if offerData.HashMinimumMargin(12) and existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
+                print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
+                self.Discorder.sendToPremium(offerData)
+            else:
+                self.Discorder.sendToBasic(offerData)
 
-    def getOffers(self) -> list[Offer]:
+        UpsertDb(offerData)
+        return offerData
+    
+    def performRequest(self,url):
+        response = requests.get(url, headers=self.getHeader)#, allow_redirects=True) 
+        if response.status_code == 200:
+            return response
+        # else:
+        #     raise Exception(f"Fehler: {response.status_code}")
+
+    # def getOffers(self) -> list[Offer]:
+    #     data = []
+    #     response = self.performRequest(self.EntryUrl)
+    #     if response.status_code == 200:
+    #         soup = BeautifulSoup(response.content, 'html.parser')
+    #         elements = soup.find_all(attrs={"data-testid": "resultItemLink"})
+    #         for currentElement in elements:
+    #             data.append(self.processElement(currentElement))
+    #     else:
+    #         print(f"Fehler: {response.status_code}")
+    #     return data
+    
+
+    def getOfferDetails(self, url:str) -> list:
         data = []
-        response = requests.get(self.EntryUrl, headers=self.getHeader)
-        
+        response = self.performRequest(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            elements = soup.find_all(attrs={"data-testid": "resultItemLink"})
-            for currentElement in elements:
-                data.append(self.process_element(currentElement))
+            links = soup.find_all(attrs={"data-testid": "resultItemLink"})
+            for currentLink in links:
+                data.append(currentLink)
         else:
             print(f"Fehler: {response.status_code}")
         return data

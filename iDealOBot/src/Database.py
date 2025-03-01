@@ -1,7 +1,8 @@
 import sqlite3
 from Offer import Offer
 
-DatabasePath="D:\sourcen\Angebots\prices_data.db"
+#DatabasePath="D:\sourcen\Angebots\prices_data.db"
+DatabasePath="prices_data.db"
 
 def getElementByTitle(title)->Offer:
     conn = sqlite3.connect(DatabasePath)
@@ -17,8 +18,7 @@ def getElementByTitle(title)->Offer:
     if row:
         return Offer(
             ASIN=row[0], ProductName=row[1], price=row[2],
-            amazonPrice=row[3],amazonDifference=row[4], ebayPrice=row[5],
-            ebayDifference=row[6],idealoUrl=row[7],StoreName=row[8],
+            amazonPrice=row[3], ebayPrice=row[5],idealoUrl=row[7],storeName=row[8],
             amazonShopUrl=row[9], ebayShopUrl=row[10], shopUrl=row[11]
         )
     return None
@@ -28,7 +28,8 @@ def getElementByASIN(asin)->Offer:
     conn = sqlite3.connect(DatabasePath)
     cursor = conn.cursor()
     cursor.execute('''
-                   SELECT ASIN, title, price, 
+                   SELECT 
+                   ASIN, title, price, 
                    amazon_price,amazon_difference,ebay_price, 
                    ebay_difference, link,shop_name,
                    amazon_shop_Url,ebay_shop_Url,shopUrl
@@ -38,8 +39,8 @@ def getElementByASIN(asin)->Offer:
     if row:
         return Offer(
             ASIN=row[0], ProductName=row[1], price=row[2],
-            amazonPrice=row[3],amazonDifference=row[4], ebayPrice=row[5],
-            ebayDifference=row[6],idealoUrl=row[7],StoreName=row[8],
+            amazonPrice=row[3], ebayPrice=row[5],
+            idealoUrl=row[7],storeName=row[8],
             amazonShopUrl=row[9], ebayShopUrl=row[10], shopUrl=row[11]
         )
     return None
@@ -64,8 +65,8 @@ def UpsertDb(currentOfferData:Offer):
             shop_name,
             shopUrl,
             amazon_shop_Url,
-            ebay_shop_Url)
-        VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)
+            ebay_shop_Url,Category)
+        VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?)
         ''', (currentOfferData.getAsinFromAmazon(), 
               currentOfferData.ProductName, 
               currentOfferData.price, 
@@ -77,7 +78,8 @@ def UpsertDb(currentOfferData:Offer):
               currentOfferData.StoreName,
               currentOfferData.shopUrl, 
               currentOfferData.amazonShopUrl,
-              currentOfferData.ebayShopUrl))
+              currentOfferData.ebayShopUrl,
+              currentOfferData.Category))
     else:
         cursor.execute('''
         UPDATE prices
@@ -109,6 +111,7 @@ def createTableIfNotExists():
         shopUrl TEXT,
         amazon_shop_Url TEXT,
         ebay_shop_Url TEXT,
+        Category TEXT,
         created DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated DATETIME DEFAULT CURRENT_TIMESTAMP
     )

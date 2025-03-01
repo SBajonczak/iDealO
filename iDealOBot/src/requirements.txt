@@ -1,0 +1,9 @@
+tabulate 
+requests 
+beautifulsoup4
+selenium
+pyodbc
+azure-identity
+fastapi
+uvicorn[standard]
+pydantic
