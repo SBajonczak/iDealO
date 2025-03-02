@@ -1,23 +1,23 @@
+from asyncio import sleep
+import random
 import requests
 from bs4 import BeautifulSoup
 import threading
 import concurrent.futures
 from datetime import datetime
 from Offer import Offer
-from Toolkits import priceStringtoFload
-from AzureDatabase import UpsertDb, getElementByASIN
+from Toolkits import priceStringtoFload, priceStringtoFload
 from Discorder import Discorder
-
 from WhatsApp import WhatsApp
+from AzureDatabase import AzureDataBase
 
 class IdealoParser:
     
-   
-    
-    
-    def __init__(self, discorder:Discorder, category:str=""):
+    def __init__(self,database: AzureDataBase, discorder:Discorder, category:str=""):
         self.Category=category
+        self.Database:AzureDataBase =database
         self.Discorder=discorder
+
     @property
     def getHeader(self):
         return {
@@ -87,9 +87,10 @@ class IdealoParser:
             
                     if offerDetails.hasMarketPrices():
                         break
-            if offerDetails.getShopNameWithTheHighestMargin()=="amazon":
+            # Getting both urls 
+            if (offerDetails.amazonRelocationUrl != ""):
                 offerDetails.amazonShopUrl = self.getDestinationShopWithFollowLink(offerDetails.amazonRelocationUrl) + "&tag=saschabajoncz-21"
-            else:
+            if (offerDetails.ebayRelocationUrl != ""):
                 offerDetails.ebayShopUrl = self.getDestinationShopWithFollowLink(offerDetails.ebayRelocationUrl)
 
             offerDetails.shopUrl = self.getDestinationShopWithFollowLink(relocateUrlhRef)
@@ -100,8 +101,9 @@ class IdealoParser:
 
 
 
-    def processElement(self,element)->Offer:
+    async def processElement(self,element)->Offer:
         offer= Offer()
+        
         title = element.find("div", {"data-testid": "productSummary__title"}).text.strip()
         print("Fetching product ", title)
         if element.find("a", {"data-testid": "link"}) != None:
@@ -110,37 +112,71 @@ class IdealoParser:
         offer.ProductName=title
         offerData= self.getLinkAndPrice(offer)
         offerData.ProductName = title
-
+        waitTime = random.uniform(30, 300)
 
         if offerData.isAmazonAvailable():
-            existingOffer = getElementByASIN(offerData.getAsinFromAmazon())
-            if offerData.HashMinimumMargin(12) and existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
-                print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
-                self.Discorder.sendToPremium(offerData)
+            existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+            if existingOffer is None:
+                ## Wenn nicht exisitert und ein Amazon link verfügbar ist, 
+                ## dann speicher den Eintrag
+                self.Database.UpsertDb(offerData)
+                ## Emittle den eintrag noch mal um die ID zu bekommen 
+                existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+                ## erstelle Historien eintrag
+                self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
+                ## Sende an discord
+                if offerData.HashMinimumMargin(12):
+                    print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
+                    self.Discorder.sendToPremium(offerData)
+                else:
+                    if offerData.HashMinimumMargin(1):
+                        self.Discorder.sendToBasic(offerData)
+                await sleep(waitTime)
+            ## Wenn ein Eintrag existiert UND preise unterschiedlich sind
+            elif existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
+                ## Aktualisiere den Preis
+                self.Database.UpsertDb(offerData)
+                ## Erstelle ein Historien Eintrag
+                self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
+                ## Send an discord
+                print(f"Item was processed, waiting now {waitTime}")
+                if offerData.HashMinimumMargin(12):
+                    print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
+                    self.Discorder.sendToPremium(offerData)
+                else:
+                    if offerData.HashMinimumMargin(1):
+                        self.Discorder.sendToBasic(offerData)
+                await sleep(waitTime)
+        else:
+            ## Benhandle alle anderen Fälle die nicht amazon spezifisch sind
+            fetchedOfferFromDB = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+            ## Is noch kein Eintrag vorhanden?
+            if (fetchedOfferFromDB is None):
+                ## erstelle ein Eintrag
+                self.Database.UpsertDb(offerData)
+                ## Hole element noch mal aus DB
+                fetchedOfferFromDB= self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+                ## Speicher historien Eintrag
+                self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
             else:
-                self.Discorder.sendToBasic(offerData)
+                if offerData.price != float(fetchedOfferFromDB.price.real):
+                    ## Speicher historien Eintrag
+                    self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
+                    # if offerData.HashMinimumMargin(12):
+                    #     print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
+                    #     self.Discorder.sendToPremium(offerData)
+                    # else:
+                    #     if offerData.HashMinimumMargin(1):
+                    #         self.Discorder.sendToBasic(offerData)
+                    # await sleep(waitTime)
 
-        UpsertDb(offerData)
+        
         return offerData
     
     def performRequest(self,url):
         response = requests.get(url, headers=self.getHeader)#, allow_redirects=True) 
         if response.status_code == 200:
             return response
-        # else:
-        #     raise Exception(f"Fehler: {response.status_code}")
-
-    # def getOffers(self) -> list[Offer]:
-    #     data = []
-    #     response = self.performRequest(self.EntryUrl)
-    #     if response.status_code == 200:
-    #         soup = BeautifulSoup(response.content, 'html.parser')
-    #         elements = soup.find_all(attrs={"data-testid": "resultItemLink"})
-    #         for currentElement in elements:
-    #             data.append(self.processElement(currentElement))
-    #     else:
-    #         print(f"Fehler: {response.status_code}")
-    #     return data
     
 
     def getOfferDetails(self, url:str) -> list:

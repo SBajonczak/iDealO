@@ -7,3 +7,4 @@ azure-identity
 fastapi
 uvicorn[standard]
 pydantic
+matplotlib

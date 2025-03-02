@@ -1,7 +1,7 @@
 import requests
 from Offer import Offer
 class Discorder:
-    def __init__(self,webhookUrl:str="", webHookPremiumUrl:str=""):
+    def __init__(self,webhookUrl:str="", webHookPremiumUrl:str="" ):
         self.WebhookUrl=webhookUrl
         self.WebHookPremiumUrl=webHookPremiumUrl
 
@@ -20,7 +20,7 @@ class Discorder:
                     "fields": [
                         {
                             "name": f"Stand {dealData.getCurrentTime()}",
-                            "value": f"[**€{dealData.price}**]({dealData.shopUrl})",
+                            "value": f"**€{dealData.price}** [zum Shop]({dealData.shopUrl})",
                             "inline": False
                         },
                         
@@ -35,7 +35,7 @@ class Discorder:
         if dealData.ebayPrice > 0 or dealData.amazonPrice > 0:
             message["embeds"][0]["fields"].append({
                 "name": f"🛒 sell on {dealData.getShopNameWithTheHighestMargin()}",
-                "value": f"[**€{round(dealData.getPriceWithTheHighestRate(),2)}**]({dealData.getCheapestShopUrl()})",
+                "value": f"**€{round(dealData.getPriceWithTheHighestRate(),2)}** [zum Shop]({dealData.getCheapestShopUrl()})",
                 "inline": True
             })
             message["embeds"][0]["fields"].append({
