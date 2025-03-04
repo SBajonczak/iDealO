@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build the Docker image
       working-directory: iDealOBot/src
-      run: docker build . --file Dockerfile --tag idealobot:$(date +%s)
+      run: docker build ./iDealOBot/src --file Dockerfile --tag idealobot:$(date +%s)
     - name: Build the Docker image
       working-directory: iDealOBot/src
       run: push idealobot:$(date +%s)
