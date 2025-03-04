@@ -95,8 +95,9 @@ class Offer:
     keepaAccessKey=""
     amazonDomainForGermany=3
 
-    def __init__(self,id:int=0,  category:str="",imageUrl:str="", ASIN:str="",idealoUrl:str="", ProductName:str= "", storeName: str="", price: float = 0, amazonPrice: float = 0, ebayPrice: float = 0, shopUrl:str="", amazonShopUrl:str="", ebayShopUrl:str=""):
+    def __init__(self,bsr:str="", id :int=0,  category:str="",imageUrl:str="", ASIN:str="",idealoUrl:str="", ProductName:str= "", storeName: str="", price: float = 0, amazonPrice: float = 0, ebayPrice: float = 0, shopUrl:str="", amazonShopUrl:str="", ebayShopUrl:str=""):
         self.ID=id
+        self.BSR=bsr
         self.ASIN=ASIN
         self.Category=category
         self.ImageUrl=imageUrl

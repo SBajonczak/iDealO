@@ -12,10 +12,12 @@ from WhatsApp import WhatsApp
 from AzureDatabase import AzureDataBase
 from Plotter import Plotter
 from PriceHistory import PriceHistory
+from Amazon import Amazon
 
 class IdealoParser:
     
-    def __init__(self,database: AzureDataBase, discorder:Discorder, category:str=""):
+    def __init__(self,amazon:Amazon,database: AzureDataBase, discorder:Discorder, category:str="", ):
+        self.amazon= amazon
         self.Category=category
         self.Database:AzureDataBase =database
         self.Discorder=discorder
@@ -116,6 +118,7 @@ class IdealoParser:
         offerData.ProductName = title
         waitTime = random.uniform(30, 300)
         if offerData.isAmazonAvailable():
+            offerData.BSR= self.amazon.fetchBSR(offerData.getAsinFromAmazon())
             existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
             if existingOffer is None:
                 ## Wenn nicht exisitert und ein Amazon link verfügbar ist, 
@@ -129,13 +132,8 @@ class IdealoParser:
                 
                 ## Sende an discord
                 if (offerData.IsDifferentTo(existingOffer)):
-                    if offerData.HashMinimumMargin(12):
-                        print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
-                        self.Discorder.sendToPremium(offerData)
-                    else:
-                        if offerData.HashMinimumMargin(1):
-                            self.Discorder.sendToBasic(offerData)
-                    await sleep(waitTime)
+                    self.sendToDiscord(waitTime, existingOffer, offerData)
+
             ## Wenn ein Eintrag existiert UND preise unterschiedlich sind
             elif existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
                 ## Aktualisiere den Preis
@@ -147,13 +145,9 @@ class IdealoParser:
                 ## Send an discord
                 print(f"Item was processed, waiting now {waitTime}")
                 if (offerData.IsDifferentTo(existingOffer)):
-                    if offerData.HashMinimumMargin(12):
-                        print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
-                        self.Discorder.sendToPremium(offerData)
-                    else:
-                        if offerData.HashMinimumMargin(1):
-                            self.Discorder.sendToBasic(offerData)
-                    await sleep(waitTime)
+                  self.sendToDiscord(waitTime, existingOffer, offerData)
+            else:
+                self.Database.UpsertDb(offerData)
         else:
             ## Benhandle alle anderen Fälle die nicht amazon spezifisch sind
             fetchedOfferFromDB = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
@@ -191,62 +185,62 @@ class IdealoParser:
         await sleep(waitTime)
 
     async def processElement(self,element)->Offer:
-        offer= Offer()
-        
         title = element.find("div", {"data-testid": "productSummary__title"}).text.strip()
-        print("Fetching product ", title)
         if element.find("a", {"data-testid": "link"}) != None:
-            offer.IdealoUrl = element.find("a", {"data-testid": "link"})['href']
-        offer.Category=self.Category
-        offer.ProductName=title
-        offerData= self.getLinkAndPrice(offer)
-        if (offerData is None):
-            return
-        offerData.ProductName = title
-        waitTime = random.uniform(30, 300)
-        if offerData.isAmazonAvailable():
-            existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
-            if existingOffer is None:
-                ## Wenn nicht exisitert und ein Amazon link verfügbar ist, 
-                ## dann speicher den Eintrag
-                self.Database.UpsertDb(offerData)
-                ## Emittle den eintrag noch mal um die ID zu bekommen 
-                existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
-               
-                ## erstelle Historien eintrag
-                self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
-                ## Sende an discord
-                self.sendToDiscord(waitTime, existingOffer, offerData)
-            ## Wenn ein Eintrag existiert UND preise unterschiedlich sind
-            elif existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
-                ## Aktualisiere den Preis
-                
-                self.Database.UpsertDb(offerData)
-                offerData.ID=existingOffer.ID
-                ## Erstelle ein Historien Eintrag
-                self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
-                ## Send an discord
-                print(f"Item was processed, waiting now {waitTime}")
-                self.sendToDiscord(waitTime, existingOffer, offerData)
+           url= element.find("a", {"data-testid": "link"})['href']
+           return await self.processElementByIdealoUrl(title, url)
 
-        else:
-            ## Benhandle alle anderen Fälle die nicht amazon spezifisch sind
-            fetchedOfferFromDB = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
-            ## Is noch kein Eintrag vorhanden?
-            if (fetchedOfferFromDB is None):
-                ## erstelle ein Eintrag
-                self.Database.UpsertDb(offerData)
-                ## Hole element noch mal aus DB
-                fetchedOfferFromDB= self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
-                ## Speicher historien Eintrag
-                self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
-            else:
-                if offerData.price != float(fetchedOfferFromDB.price.real):
-                    ## Speicher historien Eintrag
-                    self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
-                    self.sendToDiscord(waitTime, existingOffer, offerData)
+    
+        # offer.Category=self.Category
+        # offer.ProductName=title
+        # offerData= self.getLinkAndPrice(offer)
+        # if (offerData is None):
+        #     return
+        # offerData.ProductName = title
+        # waitTime = random.uniform(30, 300)
+        # if offerData.isAmazonAvailable():
+        #     existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+        #     if existingOffer is None:
+        #         ## Wenn nicht exisitert und ein Amazon link verfügbar ist, 
+        #         ## dann speicher den Eintrag
+        #         self.Database.UpsertDb(offerData)
+        #         ## Emittle den eintrag noch mal um die ID zu bekommen 
+        #         existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+               
+        #         ## erstelle Historien eintrag
+        #         self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
+        #         ## Sende an discord
+        #         self.sendToDiscord(waitTime, existingOffer, offerData)
+        #     ## Wenn ein Eintrag existiert UND preise unterschiedlich sind
+        #     elif existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
+        #         ## Aktualisiere den Preis
+                
+        #         self.Database.UpsertDb(offerData)
+        #         offerData.ID=existingOffer.ID
+        #         ## Erstelle ein Historien Eintrag
+        #         self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
+        #         ## Send an discord
+        #         print(f"Item was processed, waiting now {waitTime}")
+        #         self.sendToDiscord(waitTime, existingOffer, offerData)
+
+        # else:
+        #     ## Benhandle alle anderen Fälle die nicht amazon spezifisch sind
+        #     fetchedOfferFromDB = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+        #     ## Is noch kein Eintrag vorhanden?
+        #     if (fetchedOfferFromDB is None):
+        #         ## erstelle ein Eintrag
+        #         self.Database.UpsertDb(offerData)
+        #         ## Hole element noch mal aus DB
+        #         fetchedOfferFromDB= self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+        #         ## Speicher historien Eintrag
+        #         self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
+        #     else:
+        #         if offerData.price != float(fetchedOfferFromDB.price.real):
+        #             ## Speicher historien Eintrag
+        #             self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
+        #             self.sendToDiscord(waitTime, existingOffer, offerData)
        
-        return offerData
+        # return offerData
     
     def performRequest(self,url):
         response = requests.get(url, headers=self.getHeader)#, allow_redirects=True) 

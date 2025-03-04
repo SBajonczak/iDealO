@@ -219,6 +219,7 @@ class AzureDataBase:
                 [amazon_shop_Url] NVARCHAR(1000),
                 [ebay_shop_Url] NVARCHAR(1000),
                 [Category] NVARCHAR(100),
+                [BSR] int not null default(0),
                 [created] DATETIME2 DEFAULT GETDATE(),
                 [updated] DATETIME2 DEFAULT GETDATE()
             )
@@ -248,6 +249,7 @@ class AzureDataBase:
                 [amazon_shop_Url] NVARCHAR(1000),
                 [ebay_shop_Url] NVARCHAR(1000),
                 [Category] NVARCHAR(100),
+                [BSR] int not null default(0),
                 [created] DATETIME2 DEFAULT GETDATE(),
                 [updated] DATETIME2 DEFAULT GETDATE()
             )
@@ -289,14 +291,14 @@ class AzureDataBase:
             INSERT INTO pricesHistory (fkPriceId, ASIN, title, price, amazon_price, 
                            amazon_difference, ebay_price, ebay_difference, 
                            link, shop_name, shopUrl, amazon_shop_Url, 
-                           ebay_shop_Url, Category, created, updated)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())
+                           ebay_shop_Url, Category, created, updated, BSR)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(),?)
             ''', (
             existingOfferData.ID, nnewOfferData.ASIN, nnewOfferData.ProductName, nnewOfferData.price,
             nnewOfferData.amazonPrice, nnewOfferData.amazonDifference, nnewOfferData.ebayPrice,
             nnewOfferData.ebayDifference, nnewOfferData.IdealoUrl, nnewOfferData.StoreName,
             nnewOfferData.shopUrl, nnewOfferData.amazonShopUrl, nnewOfferData.ebayShopUrl,
-            nnewOfferData.Category
+            nnewOfferData.Category,nnewOfferData.BSR
             ))
             
             conn.commit()
@@ -315,10 +317,10 @@ class AzureDataBase:
             
             cursor.execute('''
                 MERGE INTO prices AS target
-                USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)) 
+                USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)) 
                     AS source (ASIN, title, price, amazon_price, amazon_difference, 
                             ebay_price, ebay_difference, link, shop_name, 
-                            shopUrl, amazon_shop_Url, ebay_shop_Url)
+                            shopUrl, amazon_shop_Url, ebay_shop_Url,BSR)
                 ON target.ASIN = source.ASIN
                 WHEN MATCHED THEN
                     UPDATE SET 
@@ -333,22 +335,23 @@ class AzureDataBase:
                         shopUrl = source.shopUrl,
                         amazon_shop_Url = source.amazon_shop_Url,
                         ebay_shop_Url = source.ebay_shop_Url,
+                        BSR = source.BSR,
                         updated = GETDATE()
                 WHEN NOT MATCHED THEN
                     INSERT (ASIN, title, price, amazon_price, amazon_difference,
                             ebay_price, ebay_difference, link, shop_name,
-                            shopUrl, amazon_shop_Url, ebay_shop_Url)
+                            shopUrl, amazon_shop_Url, ebay_shop_Url,BSR)
                     VALUES (source.ASIN, source.title, source.price, 
                             source.amazon_price, source.amazon_difference,
                             source.ebay_price, source.ebay_difference, 
                             source.link, source.shop_name, source.shopUrl,
-                            source.amazon_shop_Url, source.ebay_shop_Url);
+                            source.amazon_shop_Url, source.ebay_shop_Url, source.BSR);
             ''', (
                 offer.getAsinFromAmazon(), offer.ProductName, offer.price,
                 offer.amazonPrice, offer.amazonDifference,
                 offer.ebayPrice, offer.ebayDifference,
                 offer.IdealoUrl, offer.StoreName,
-                offer.shopUrl, offer.amazonShopUrl, offer.ebayShopUrl
+                offer.shopUrl, offer.amazonShopUrl, offer.ebayShopUrl, offer.BSR
             ))
             
             conn.commit()
