@@ -12,7 +12,6 @@ class Plotter:
         self.database=Database      
 
     def plot(self,priceId:int)->str:
-       
         data: list[PriceHistory] = self.database.createPriceHistoryBypriceId(priceId)
         # Group prices by date
         grouped_data = defaultdict(list)
@@ -25,12 +24,12 @@ class Plotter:
 
         # Prepare data for plotting
         dates = list(avg_prices_per_day.keys())
+        
+        if len(dates)>1:
+            return None
+        
         prices = [f"{price:.2f} €" for price in avg_prices_per_day.values()]
-        # # Plot the data
-        # # Extract dates and prices from the data
-        # dates = [entry.created.strftime('%d.%m %H:%M') for entry in data]
-        # prices = [f"{entry.price:.2f} €" for entry in data]
-
+        
         # Create the plot
         # Format dates to German format
         plt.plot(dates, prices, marker='o')

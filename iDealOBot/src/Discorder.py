@@ -74,7 +74,7 @@ class Discorder:
         p= Plotter(self.db)
         filename=p.plot(dealData.ID)
 
-        if filename!="":
+        if filename!="" and filename!=None:
             with open(filename, "rb") as file:
      
                 files = {"file": file}
