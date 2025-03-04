@@ -180,7 +180,16 @@ class IdealoParser:
         
         return offerData
     
-    
+    async def sendToDiscord(self,waitTime:float, existingOffer:Offer, offerData:Offer):
+        ## Sende an discord
+        if offerData.HashMinimumMargin(12):
+            print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
+            self.Discorder.sendToPremium(offerData)
+        else:
+            if offerData.HashMinimumMargin(1):
+                self.Discorder.sendToBasic(offerData)
+        await sleep(waitTime)
+
     async def processElement(self,element)->Offer:
         offer= Offer()
         
@@ -207,13 +216,7 @@ class IdealoParser:
                 ## erstelle Historien eintrag
                 self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
                 ## Sende an discord
-                if offerData.HashMinimumMargin(12):
-                    print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
-                    self.Discorder.sendToPremium(offerData)
-                else:
-                    if offerData.HashMinimumMargin(1):
-                        self.Discorder.sendToBasic(offerData)
-                await sleep(waitTime)
+                self.sendToDiscord(waitTime, existingOffer, offerData)
             ## Wenn ein Eintrag existiert UND preise unterschiedlich sind
             elif existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
                 ## Aktualisiere den Preis
@@ -224,13 +227,8 @@ class IdealoParser:
                 self.Database.CreatePriceHistoryEntry(existingOffer, offerData)
                 ## Send an discord
                 print(f"Item was processed, waiting now {waitTime}")
-                if offerData.HashMinimumMargin(12):
-                    print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
-                    self.Discorder.sendToPremium(offerData)
-                else:
-                    if offerData.HashMinimumMargin(1):
-                        self.Discorder.sendToBasic(offerData)
-                await sleep(waitTime)
+                self.sendToDiscord(waitTime, existingOffer, offerData)
+
         else:
             ## Benhandle alle anderen Fälle die nicht amazon spezifisch sind
             fetchedOfferFromDB = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
@@ -246,15 +244,8 @@ class IdealoParser:
                 if offerData.price != float(fetchedOfferFromDB.price.real):
                     ## Speicher historien Eintrag
                     self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
-                    # if offerData.HashMinimumMargin(12):
-                    #     print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
-                    #     self.Discorder.sendToPremium(offerData)
-                    # else:
-                    #     if offerData.HashMinimumMargin(1):
-                    #         self.Discorder.sendToBasic(offerData)
-                    # await sleep(waitTime)
-
-        
+                    self.sendToDiscord(waitTime, existingOffer, offerData)
+       
         return offerData
     
     def performRequest(self,url):
