@@ -18,8 +18,8 @@ jobs:
       working-directory: iDealOBot
       run: docker build . --file Dockerfile --tag idealobot:$(date +%s)
     - name: Build the Docker image
-      working-directory: iDealOBot/src
-      run: push idealobot:$(date +%s)
+      working-directory: iDealOBot
+      run: docker push idealobot:$(date +%s)
 
 
     
