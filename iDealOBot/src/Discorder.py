@@ -1,7 +1,12 @@
 import requests
 from Offer import Offer
+from Plotter import Plotter
+from AzureDatabase import AzureDataBase
+import os
+
 class Discorder:
-    def __init__(self,webhookUrl:str="", webHookPremiumUrl:str="" ):
+    def __init__(self,database:AzureDataBase, webhookUrl:str="", webHookPremiumUrl:str="" ):
+        self.db= database
         self.WebhookUrl=webhookUrl
         self.WebHookPremiumUrl=webHookPremiumUrl
 
@@ -55,9 +60,28 @@ class Discorder:
             print(f"Failed to send message to Discord: {response.status_code}, {response.text}")
 
     def sendToPremium(self, dealData:Offer):
+        p= Plotter(self.db)
+        filename=p.plot(dealData.ID)
+
         headers = {
-            'Content-Type': 'application/json',
-        }
+                'Content-Type': 'application/json',
+            }
         response = requests.post(self.WebHookPremiumUrl, headers=headers, json=self.generateMessage(dealData))
         if response.status_code != 204:
             print(f"Failed to send message to Discord: {response.status_code}, {response.text}")
+
+        # plotting files
+        p= Plotter(self.db)
+        filename=p.plot(dealData.ID)
+
+        if filename!="":
+            with open(filename, "rb") as file:
+     
+                files = {"file": file}
+                response = requests.post(self.WebHookPremiumUrl, json=self.generateMessage(dealData), files=files)
+                # response = requests.post(self.WebHookPremiumUrl, files=files, data={"payload_json": self.generateMessage(dealData)})
+            if response.status_code != 204:
+                print(f"Failed to send message to Discord: {response.status_code}, {response.text}")
+        
+            if os.path.exists(filename):
+                os.remove(filename)

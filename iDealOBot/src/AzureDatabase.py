@@ -175,7 +175,7 @@ class AzureDataBase:
                                link, shop_name, shopUrl, amazon_shop_Url, 
                                ebay_shop_Url, Category, created, updated
                         FROM dbo.pricesHistory
-                        WHERE fkPriceId = ?
+                        WHERE fkPriceId = ? order by created asc
                     ''', (priceId,))
                     rows = cursor.fetchall()
                     result = []

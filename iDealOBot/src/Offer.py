@@ -1,5 +1,6 @@
 import datetime
 import re
+import Offer 
 
 class CrawlingPage:
 
@@ -128,6 +129,9 @@ class Offer:
         if self.ebayPrice and self.price:
             return ((self.ebayPrice - self.price) / self.price) * 100
         return 0
+    
+    def IsDifferentTo(self, offer:Offer)->bool:
+        return self.price!=offer.price
     
     def HashMinimumMargin(self, margin):
          return self.getHighestMargin() >=margin
