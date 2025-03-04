@@ -44,6 +44,11 @@ class Discorder:
                 "inline": True
             })
             message["embeds"][0]["fields"].append({
+                "name": f"BSR",
+                "value": f"**{dealData.BSR}**",
+                "inline": True
+            })
+            message["embeds"][0]["fields"].append({
                 "name": "💰 Profit",
                 "value": f"Marge: **{round(dealData.getHighestMargin(), 2)}%** - Profit: **€{round(dealData.getProfitInEur(),2)}**",
                 "inline": True
