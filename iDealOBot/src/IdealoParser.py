@@ -132,7 +132,7 @@ class IdealoParser:
                 
                 ## Sende an discord
                 if (offerData.IsDifferentTo(existingOffer)):
-                    self.sendToDiscord(waitTime, existingOffer, offerData)
+                    await self.sendToDiscord(waitTime, existingOffer, offerData)
 
             ## Wenn ein Eintrag existiert UND preise unterschiedlich sind
             elif existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
@@ -145,7 +145,7 @@ class IdealoParser:
                 ## Send an discord
                 print(f"Item was processed, waiting now {waitTime}")
                 if (offerData.IsDifferentTo(existingOffer)):
-                  self.sendToDiscord(waitTime, existingOffer, offerData)
+                  await self.sendToDiscord(waitTime, existingOffer, offerData)
             else:
                 self.Database.UpsertDb(offerData)
         else:
