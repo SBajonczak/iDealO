@@ -5,6 +5,8 @@ from AzureDatabase  import AzureDataBase
 from Offer import CrawlingPage
 import os
 
+amazon_secret = os.getenv('AMAZON_SECRET')
+amazon_access= os.getenv('AMAZON_ACCESS')
 
 
 
@@ -23,10 +25,7 @@ result=[]
 webhook = os.getenv('WEBHOOK')
 premiumWebhook = os.getenv('PREMIUM_WEBHOOK')
 connection_string = os.getenv('AZURE_SQL_CONNECTION_STRING') 
-category = os.getenv('CATEGORY','Wildtiere')
-
-amazon_access = os.getenv('AMAZON_SECRET')
-amazon_secret= os.getenv('AMAZON_ACCESS')
+category = os.getenv('CATEGORY')
 database = AzureDataBase(connection_string)
 database.createTableIfNotExists()
 
