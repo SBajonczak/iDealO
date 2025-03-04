@@ -12,7 +12,7 @@ class Amazon:
     
     def fetchBSR(self, asin:str)->str:
         try:
-            amazon = AmazonApi(self.accesskey, self.secretkey, self.partnerTag, self.COUNTRY, throttling=2)
+            amazon = AmazonApi(self.accesskey, self.secretkey, self.partnerTag, self.COUNTRY, throttling=5)
             item = amazon.get_items(asin)
             if len(item[0].browse_node_info.browse_nodes) > 0:
                 print(f"Found BSR for {asin} {item[0].browse_node_info.browse_nodes[0].display_name}")
