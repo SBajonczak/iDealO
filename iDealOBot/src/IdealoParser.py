@@ -119,7 +119,7 @@ class IdealoParser:
         waitTime = random.uniform(30, 300)
         if offerData.isAmazonAvailable():
             existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
-            if existingOffer.BSR== None or existingOffer.BSR=="":
+            if existingOffer!= None and (existingOffer.BSR== None or existingOffer.BSR==""):
                 offerData.BSR= self.amazon.fetchBSR(offerData.getAsinFromAmazon())
             else:
                 offerData.BSR= existingOffer.BSR
@@ -137,7 +137,6 @@ class IdealoParser:
                 ## Sende an discord
                 if (offerData.IsDifferentTo(existingOffer)):
                     await self.sendToDiscord(waitTime, existingOffer, offerData)
-
             ## Wenn ein Eintrag existiert UND preise unterschiedlich sind
             elif existingOffer is not None and existingOffer.price is not None and offerData.price != float(existingOffer.price.real):
                 ## Aktualisiere den Preis
