@@ -118,8 +118,10 @@ class IdealoParser:
         offerData.ProductName = title
         waitTime = random.uniform(30, 300)
         if offerData.isAmazonAvailable():
-            offerData.BSR= self.amazon.fetchBSR(offerData.getAsinFromAmazon())
             existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
+            if (existingOffer.BSR== None or existingOffer.BSR="")
+                offerData.BSR= self.amazon.fetchBSR(offerData.getAsinFromAmazon())
+
             if existingOffer is None:
                 ## Wenn nicht exisitert und ein Amazon link verfügbar ist, 
                 ## dann speicher den Eintrag
@@ -164,13 +166,6 @@ class IdealoParser:
                     ## Speicher historien Eintrag
                     self.Database.CreatePriceHistoryEntry(fetchedOfferFromDB, offerData)
                     # if offerData.HashMinimumMargin(12):
-                    #     print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
-                    #     self.Discorder.sendToPremium(offerData)
-                    # else:
-                    #     if offerData.HashMinimumMargin(1):
-                    #         self.Discorder.sendToBasic(offerData)
-                    # await sleep(waitTime)
-
         
         return offerData
     
