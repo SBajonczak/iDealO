@@ -177,7 +177,7 @@ class IdealoParser:
     async def sendToDiscord(self,waitTime:float, existingOffer:Offer, offerData:Offer):
         ## Sende an discord
         if offerData.HashMinimumMargin(12):
-            print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offer.price.real)}")
+            print(f"Send to Basic the price differ stored price {existingOffer.price} new price {float(offerData.price.real)}")
             self.Discorder.sendToPremium(offerData)
         else:
             if offerData.HashMinimumMargin(1):
