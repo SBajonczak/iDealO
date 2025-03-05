@@ -34,7 +34,7 @@ jobs:
       with:
           context: ./iDealOBot/html
           push: true
-          tags: beejay/idealobot:latest
+          tags: beejay/idealobotweb:latest
 
 
 
