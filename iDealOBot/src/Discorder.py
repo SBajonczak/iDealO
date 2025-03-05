@@ -43,11 +43,12 @@ class Discorder:
                 "value": f"**€{round(dealData.getPriceWithTheHighestRate(),2)}** [zum Shop]({dealData.getCheapestShopUrl()})",
                 "inline": True
             })
-            message["embeds"][0]["fields"].append({
-                "name": f"BSR",
-                "value": f"**{dealData.BSR}**",
-                "inline": True
-            })
+            if dealData.BSR != None:
+                message["embeds"][0]["fields"].append({
+                    "name": f"BSR",
+                    "value": f"**{dealData.BSR}**",
+                    "inline": True
+                })
             message["embeds"][0]["fields"].append({
                 "name": "💰 Profit",
                 "value": f"Marge: **{round(dealData.getHighestMargin(), 2)}%** - Profit: **€{round(dealData.getProfitInEur(),2)}**",
