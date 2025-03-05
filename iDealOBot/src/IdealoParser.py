@@ -120,9 +120,9 @@ class IdealoParser:
         if offerData.isAmazonAvailable():
             existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
             if existingOffer!= None and (existingOffer.BSR== None or existingOffer.BSR==""):
-                offerData.BSR= self.amazon.fetchBSR(offerData.getAsinFromAmazon())
-            else:
                 offerData.BSR= existingOffer.BSR
+            else:
+                offerData.BSR= self.amazon.fetchBSR(offerData.getAsinFromAmazon())
                 
             if existingOffer is None:
                 ## Wenn nicht exisitert und ein Amazon link verfügbar ist, 
