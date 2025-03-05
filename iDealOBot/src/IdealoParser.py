@@ -119,9 +119,11 @@ class IdealoParser:
         waitTime = random.uniform(30, 300)
         if offerData.isAmazonAvailable():
             existingOffer = self.Database.getElementByIdealoUrl(offerData.IdealoUrl)
-            if (existingOffer.BSR== None or existingOffer.BSR="")
+            if existingOffer.BSR== None or existingOffer.BSR=="":
                 offerData.BSR= self.amazon.fetchBSR(offerData.getAsinFromAmazon())
-
+            else:
+                offerData.BSR= existingOffer.BSR
+                
             if existingOffer is None:
                 ## Wenn nicht exisitert und ein Amazon link verfügbar ist, 
                 ## dann speicher den Eintrag
