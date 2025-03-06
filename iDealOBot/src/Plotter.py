@@ -13,6 +13,10 @@ class Plotter:
 
     def plot(self,priceId:int)->str:
         data: list[PriceHistory] = self.database.createPriceHistoryBypriceId(priceId)
+        if len(data)==0:
+            print("No data found for id ",priceId)
+            return None
+        projectName= data[0].ProductName
         # Group prices by date
         grouped_data = defaultdict(list)
         for entry in data:
@@ -41,7 +45,7 @@ class Plotter:
         plt.xticks(rotation=45)
         plt.ylabel('Preis')
         # plt.gca().invert_yaxis()
-        plt.title(f'Preisentwicklung für {data[0].ProductName}')
+        plt.title(f'Preisentwicklung für {projectName}')
 
         filename=f"{data[0].fkpriceid}.png"
         # Save the plot to a file
