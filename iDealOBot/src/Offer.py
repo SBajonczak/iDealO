@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 import re
 import Offer 
 
@@ -132,7 +133,7 @@ class Offer:
         return 0
     
     def IsDifferentTo(self, offer:Offer)->bool:
-        return self.price!=offer.price
+        return self.price != float(offer.price)
     
     def HashMinimumMargin(self, margin):
          return self.getHighestMargin() >=margin

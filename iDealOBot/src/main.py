@@ -4,11 +4,12 @@ from IdealoParser import IdealoParser
 from AzureDatabase  import AzureDataBase
 from Offer import CrawlingPage
 import os
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
 
 amazon_secret = os.getenv('AMAZON_SECRET')
 amazon_access= os.getenv('AMAZON_ACCESS')
-
-
 
 import random
 import asyncio
