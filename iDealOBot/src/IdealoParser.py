@@ -240,7 +240,8 @@ class IdealoParser:
     
     def performRequest(self,url):
         response = requests.get(url, headers=self.getHeader)#, allow_redirects=True) 
-        if response.status_code == 200:
+        
+        if response!= None and  response.status_code == 200:
             return response
     
 
