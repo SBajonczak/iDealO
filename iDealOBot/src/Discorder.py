@@ -68,7 +68,7 @@ class Discorder:
     def sendToPremium(self, dealData:Offer):
         p= Plotter(self.db)
         filename=p.plot(dealData.ID)
-
+    
         headers = {
                 'Content-Type': 'application/json',
             }
