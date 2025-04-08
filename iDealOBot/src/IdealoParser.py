@@ -54,7 +54,7 @@ class IdealoParser:
             if responseDetails.status_code == 200:
                 soupDetails = BeautifulSoup(responseDetails.content, 'html.parser')
                 offer_list = soupDetails.find(id="offer-list-with-pagination")
-
+                offerDetails.ProductName=soupDetails.find(id="oopStage-title").text.replace("\n", "")
                 ## Get Image
                 if soupDetails.find(id="slide-0")!= None:
                     img= soupDetails.find(id="slide-0").find("img")["src"]
@@ -181,10 +181,7 @@ class IdealoParser:
         await sleep(waitTime)
 
     async def processElement(self,element)->Offer:
-        title = element.find("div", {"data-testid": "productSummary__title"}).text.strip()
-        if element.find("a", {"data-testid": "link"}) != None:
-           url= element.find("a", {"data-testid": "link"})['href']
-           return await self.processElementByIdealoUrl(title, url)
+        return await self.processElementByIdealoUrl("", element.attrs["href"])
 
     
     
@@ -200,7 +197,7 @@ class IdealoParser:
         response = self.performRequest(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            links = soup.find_all(attrs={"data-testid": "resultItemLink"})
+            links = soup.find_all(attrs={"class": lambda x: x and x.startswith("sr-resultItemTile__link")})
             for currentLink in links:
                 data.append(currentLink)
         else:
